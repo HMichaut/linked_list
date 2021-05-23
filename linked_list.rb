@@ -1,3 +1,7 @@
+# Importing the unit test library
+require "test/unit/assertions"
+include Test::Unit::Assertions
+
 # Class representing a linked list
 class LinkedList
 
@@ -9,17 +13,10 @@ class LinkedList
   def append(value)
     if @content.nil?
       @content = Node.new(value)
-    elsif @content.next_node.nil?
-      @content.next_node = Node.new(value)
     else
-      recursive_lambda = lambda do |item|
-        if item.next_node.nil?
-          item.next_node = Node.new(value)
-        else
-          recursive_lambda.call(item.next_node)
-        end
-      end
-      recursive_lambda.call(@content.next_node)
+      current_node = @content
+      current_node = current_node.next_node until current_node.next_node.nil?
+      current_node.next_node = Node.new(value)
     end
   end
 
@@ -35,152 +32,123 @@ class LinkedList
   # Returns the total number of nodes in the list
   def size
     node_number = 0
-    unless @content.nil?
-      recursive_lambda = lambda do |item|
-        node_number += 1
-        recursive_lambda.call(item.next_node) unless item.next_node.nil?
-      end
-      recursive_lambda.call(@content)
+    current_node = @content
+    node_number += 1 unless current_node.nil?
+    until current_node.next_node.nil?
+      current_node = current_node.next_node
+      node_number += 1
     end
     node_number
   end
 
   # Returns the first node in the list
   def head
-    @content.value
+    @content
   end
 
   # Returns the last node in the list
   def tail
-    if @content.nil? || @content.next_node.nil?
-      @content
-    else
-      recursive_lambda = lambda do |item|
-        if item.next_node.nil?
-          item
-        else
-          recursive_lambda.call(item.next_node)
-        end
-      end
-      recursive_lambda.call(@content.next_node)
-    end
+    return nil if @content.nil? || @content.next_node.nil?
+
+    current_node = @content
+    current_node = current_node.next_node until current_node.next_node.nil?
+    current_node
   end
 
   # Returns the node at the given index
   def at(index)
-    iteration = -1
-    recursive_lambda = lambda do |item|
+    iteration = 0
+    return 'Error: Index out of range!' if size < index + 1
+
+    current_node = @content
+    while iteration < index
+      current_node = current_node.next_node
       iteration += 1
-      return 'index out of range' if item.nil?
-
-      return item if iteration >= index
-
-      return 'index out of range' if item.next_node.nil?
-
-      recursive_lambda.call(item.next_node)
     end
-    recursive_lambda.call(@content)
+    current_node
   end
 
   # Removes the last element from the list
   def pop
-    if @content.nil?
-      @content
-    elsif @content.next_node.nil?
-      @content = nil
-    else
-      recursive_lambda = lambda do |item|
-        if item.next_node.next_node.nil?
-          item.next_node = nil
-        else
-          recursive_lambda.call(item.next_node)
-        end
-      end
-      recursive_lambda.call(@content.next_node)
-    end
+    return 'Error: empty list!' if @content.nil?
+
+    current_node = @content
+    current_node = current_node.next_node until current_node.next_node.next_node.nil?
+    current_node.next_node = nil
   end
 
-  # Returns true if the passed in value is in the list and otherwise returns 
+  # Returns true if the passed in value is in the list and otherwise returns
   # false.
   def contains?(value)
     if @content.nil?
       false
     else
-      recursive_lambda = lambda do |item|
-        if item.value == value
-          true
-        elsif item.next_node.nil?
-          false
-        else
-          recursive_lambda.call(item.next_node)
-        end
+      current_node = @content
+      until current_node.next_node.next_node.nil?
+        current_node = current_node.next_node
+        return true if current_node.value == value
       end
-      recursive_lambda.call(@content.next_node)
+      false
     end
   end
 
   # Returns the index of the node containing value, or nil if not found.
   def find(value)
     node_number = 0
-    unless @content.nil?
-      recursive_lambda = lambda do |item|
-        node_number += 1
-        return node_number if item.value == value
+    current_node = @content
+    until current_node.next_node.nil?
+      return node_number if current_node.value == value
 
-        recursive_lambda.call(item.next_node) unless item.next_node.nil?
-      end
-      node_number = recursive_lambda.call(@content)
+      current_node = current_node.next_node
+      node_number += 1
     end
-    node_number
+    nil
   end
 
-  # Represent your LinkedList objects as strings, so you can print them out and 
+  # Represent your LinkedList objects as strings, so you can print them out and
   # preview them in the console. The format should be:
   # ( value ) -> ( value ) -> ( value ) -> nil
   def to_s
     array_to_be_string = []
-    if @content.nil?
-      'nil'
-    else
-      recursive_lambda = lambda do |item|
-        array_to_be_string << item.value
-        recursive_lambda.call(item.next_node) unless item.next_node.nil?
-      end
-      recursive_lambda.call(@content)
-      "( #{array_to_be_string.join(' ) -> ( ')} ) -> nil"
+    return 'nil' if @content.nil?
+
+    current_node = @content
+    until current_node.next_node.nil?
+      array_to_be_string << current_node.value
+      current_node = current_node.next_node
     end
+    array_to_be_string << current_node.value
+    "( #{array_to_be_string.join(' ) -> ( ')} ) -> nil"
   end
 
   # Inserts a new node with the provided value at the given index.
   def insert_at(value, index)
-    iteration = 0
-    recursive_lambda = lambda do |item|
-      iteration += 1
-      return nil if item.nil?
+    return 'Error: Index out of range!' if size < index
 
-      if iteration >= index
-        item.next_node = Node.new(value, item.next_node)
-      else
-        recursive_lambda.call(item.next_node)
+    if index == 0
+      @content = Node.new(value, @content)
+    else
+      node_number = 1
+      current_node = @content
+      until node_number == index
+        current_node = current_node.next_node
+        node_number += 1
       end
+      current_node.next_node = Node.new(value, current_node.next_node)
     end
-    recursive_lambda.call(@content)
   end
 
   # Removes the node at the given index.
   def remove_at(index)
-    iteration = 0
-    recursive_lambda = lambda do |item|
-      iteration += 1
-      return nil if item.nil?
+    return 'Error: Index out of range!' if size < index + 1
 
-      if iteration >= index
-        item.next_node = item.next_node.next_node
-      else
-        recursive_lambda.call(item.next_node)
-      end
+    node_number = 1
+    current_node = @content
+    until node_number == index
+      current_node = current_node.next_node
+      node_number += 1
     end
-    recursive_lambda.call(@content)
+    current_node.next_node = current_node.next_node.next_node
   end
 end
 
@@ -193,17 +161,56 @@ class Node
     @next_node = next_node
   end
 
+  # Represent your Node objects as strings, so you can print them out and
+  # preview them in the console. The format should be:
+  # ( value ) -> ( value ) -> ( value ) -> nil
   def to_s
     array_to_be_string = []
-    if @value.nil?
-      'nil'
-    else
-      recursive_lambda = lambda do |item|
-        array_to_be_string << item.value
-        recursive_lambda.call(item.next_node) unless item.next_node.nil?
-      end
-      recursive_lambda.call(self)
-      "( #{array_to_be_string.join(' ) -> ( ')} ) -> nil"
+    return 'nil' if self.nil?
+
+    current_node = self
+    until current_node.next_node.nil?
+      array_to_be_string << current_node.value
+      current_node = current_node.next_node
     end
+    array_to_be_string << current_node.value
+    "( #{array_to_be_string.join(' ) -> ( ')} ) -> nil"
   end
 end
+
+# Unit tests
+new_list = LinkedList.new
+new_list.append(1)
+assert_equal new_list.size, 1
+new_list.append(2)
+assert_equal new_list.size, 2
+new_list.append(3)
+assert_equal new_list.size, 3
+new_list.append(4)
+assert_equal new_list.size, 4
+new_list.prepend(0)
+assert_equal new_list.size, 5
+assert_equal new_list.to_s, '( 0 ) -> ( 1 ) -> ( 2 ) -> ( 3 ) -> ( 4 ) -> nil'
+assert_equal new_list.head.to_s, '( 0 ) -> ( 1 ) -> ( 2 ) -> ( 3 ) -> ( 4 ) -> nil'
+assert_equal new_list.tail.to_s, '( 4 ) -> nil'
+assert_equal new_list.at(0).to_s, '( 0 ) -> ( 1 ) -> ( 2 ) -> ( 3 ) -> ( 4 ) -> nil'
+assert_equal new_list.at(1).to_s, '( 1 ) -> ( 2 ) -> ( 3 ) -> ( 4 ) -> nil'
+assert_equal new_list.at(2).to_s, '( 2 ) -> ( 3 ) -> ( 4 ) -> nil'
+assert_equal new_list.at(3).to_s, '( 3 ) -> ( 4 ) -> nil'
+assert_equal new_list.at(4).to_s, '( 4 ) -> nil'
+assert_equal new_list.at(8).to_s, 'Error: Index out of range!'
+new_list.pop
+assert_equal new_list.size, 4
+assert_equal new_list.to_s, '( 0 ) -> ( 1 ) -> ( 2 ) -> ( 3 ) -> nil'
+assert_equal new_list.contains?(2), true
+assert_equal new_list.contains?(1), true
+assert_equal new_list.contains?(5), false
+assert_equal new_list.find(2), 2
+assert_equal new_list.find(1), 1
+assert_equal new_list.find(5), nil
+new_list.remove_at(3)
+assert_equal new_list.to_s, '( 0 ) -> ( 1 ) -> ( 2 ) -> nil'
+new_list.insert_at(3, 3)
+assert_equal new_list.to_s, '( 0 ) -> ( 1 ) -> ( 2 ) -> ( 3 ) -> nil'
+new_list.insert_at(0, 0)
+assert_equal new_list.to_s, '( 0 ) -> ( 0 ) -> ( 1 ) -> ( 2 ) -> ( 3 ) -> nil'
